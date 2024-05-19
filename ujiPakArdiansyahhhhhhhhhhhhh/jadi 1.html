@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Perpustakaan Mini</title>
+</head>
+<body>
+    <h1>Form Peminjaman Buku</h1>
+    <form onsubmit="saveData(event)">
+        <label>Nama Peminjam:</label>
+        <input type="text" id="nama_peminjam" required><br><br>
+        <label>Kode Jenis Buku:</label>
+        <select id="kode_buku">
+            <option value="C">Cerpen</option>
+            <option value="K">Komik</option>
+            <option value="N">Novel</option>
+        </select><br><br>
+        <label>Banyak Pinjam:</label>
+        <input type="number" id="banyak_pinjam" required><br><br>
+        <input type="submit" value="Submit">
+    </form>
+
+    <table border='1' id="output_table">
+        <tr><th>No.</th><th>Nama Peminjam</th><th>Jenis Buku</th><th>Banyak Pinjam</th><th>Tarif</th><th>Jumlah Bayar</th></tr>
+    </table>
+
+    <script>
+        let peminjamanBuku = [];
+
+        function sortData() {
+            peminjamanBuku.sort((a, b) => {
+                let namaA = a['Nama Peminjam'].toUpperCase(); 
+                let namaB = b['Nama Peminjam'].toUpperCase();
+                if (namaA < namaB) {
+                    return -1;
+                }
+                if (namaA > namaB) {
+                    return 1;
+                }
+                return 0;
+            });
+        }
+
+        function saveData(event) {
+            event.preventDefault();
+
+            let nama = document.getElementById('nama_peminjam').value;
+            let kode = document.getElementById('kode_buku').value;
+            let banyak = document.getElementById('banyak_pinjam').value;
+
+            let judul, tarif;
+            if (kode === 'C') {
+                judul = 'Cerpen';
+                tarif = 500;
+            } else if (kode === 'K') {
+                judul = 'Komik';
+                tarif = 700;
+            } else if (kode === 'N') {
+                judul = 'Novel';
+                tarif = 1000;
+            }
+
+            let jumlahBayar = banyak * tarif;
+
+            peminjamanBuku.push({ "Nama Peminjam": nama, "Kode Jenis Buku": kode, "Judul Buku": judul, "Banyak Pinjam": banyak, "Tarif": tarif, "Jumlah Bayar": jumlahBayar });
+
+            sortData(); // Panggil fungsi untuk mengurutkan data setiap kali data baru ditambahkan
+            displayData();
+        }
+
+        function displayData() {
+            let table = document.getElementById('output_table');
+            let rows = '';
+
+            peminjamanBuku.forEach((item, index) => {
+                rows += `<tr><td>${index + 1}</td><td>${item['Nama Peminjam']}</td><td>${item['Judul Buku']}</td><td>${item['Banyak Pinjam']}</td><td>${item['Tarif']}</td><td>${item['Jumlah Bayar']}</td></tr>`;
+            });
+
+            table.innerHTML = "<tr><th>No.</th><th>Nama Peminjam</th><th>Jenis Buku</th><th>Banyak Pinjam</th><th>Tarif</th><th>Jumlah Bayar</th></tr>" + rows;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+canvas {
+    border:1px solid #d3d3d3;
+    background-color: #f1f1f1;
+}
+
+.vertical-road {
+    width: 10px;
+    height: 370px; /* sesuaikan tinggi dengan canvas */
+    background-color: #ccc; /* warna abu-abu */
+    display: inline-block;
+    vertical-align: top; /* agar jalan vertikal ada di atas */
+}
+
+.side-bar {
+    width: 10px;
+    height: 370px; /* sesuaikan tinggi dengan canvas */
+    background-color: rgb(75, 161, 75); /* warna hijau */
+    display: inline-block;
+    vertical-align: top; /* agar kotak hijau ada di atas */
+}
+</style>
+</head>
+<body onload="startGame()">
+    <div id="timer" style="position: absolute; top: 10px; left: 10px; font-size: 18px;"></div>
+    <div id="score" style="position: absolute; top: 30px; left: 10px; font-size: 18px;">Score: 0</div>
+<script>
+
+var myGamePiece;
+var randomComponent;
+var isGameOver = false; 
+var startTime;
+var score = 0;
+var scoreIncrement = 10; // Jumlah penambahan skor setiap kali tabrakan
+
+function startGame() {
+    score = 0;
+    startTime = new Date().getTime();
+    myGamePiece = new component(30, 50, "red", 100, 300);
+    myGameArea.start();
+    randomComponent = new randomColorComponent();
+    var scoreInterval = setInterval(function() {
+        score += scoreIncrement;
+        updateScore();
+    }, 20000); // Penambahan skor setiap 20 detik (20000 milidetik)
+}
+function updateTimer() {
+    var currentTime = new Date().getTime();
+    var elapsedTime = Math.floor((currentTime - startTime) / 1000); // Konversi ke detik
+    document.getElementById("timer").innerHTML = "Time: " + elapsedTime + "s";
+}
+
+var myGameArea = {
+    canvas : document.createElement("canvas"),
+    start : function() {
+        this.canvas.width = 230; // tambahkan lebar untuk menyesuaikan dengan pinggiran
+        this.canvas.height = 370;
+        this.context = this.canvas.getContext("2d");
+        
+        // Tambahkan pinggiran hijau di sisi kanan dan kiri
+        var leftSide = document.createElement('div');
+        leftSide.classList.add('side-bar');
+        var rightSide = document.createElement('div');
+        rightSide.classList.add('side-bar');
+        
+        document.body.insertBefore(leftSide, document.body.childNodes[0]);
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+        document.body.insertBefore(rightSide, document.body.childNodes[0]);
+        
+        this.interval = setInterval(updateGameArea, 20);
+        drawVerticalRoad(); // tambahkan fungsi untuk menggambar jalan vertikal
+    },
+    clear : function() {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+}
+
+function component(width, height, color, x, y) {
+    this.width = width;
+    this.height = height;
+    this.speedX = 0;
+    this.speedY = 0;
+    this.x = x;
+    this.y = y;    
+    this.update = function() {
+        ctx = myGameArea.context;
+        ctx.fillStyle = color;
+        ctx.fillRect(this.x + 10, this.y, this.width, this.height); // Tambah 10 untuk mengimbangi lebar sidebar
+    }
+
+    this.newPos = function() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+
+        // Batasan agar kotak tidak keluar dari batas kiri dan kanan canvas
+        if (this.x < 0) {
+            this.x = 0;
+        }
+        if (this.x + this.width > myGameArea.canvas.width - 10) {
+            this.x = myGameArea.canvas.width - this.width - 10;
+        }
+
+        // Batasan agar kotak tidak keluar dari batas atas dan bawah canvas
+        if (this.y < 0) {
+            this.y = 0;
+        }
+        if (this.y + this.height > myGameArea.canvas.height) {
+            this.y = myGameArea.canvas.height - this.height;
+        }
+    }
+    this.crashWith = function(otherobj) {
+        var myleft = this.x;
+        var myright = this.x + this.width;
+        var mytop = this.y;
+        var mybottom = this.y + this.height;
+        var otherleft = otherobj.x;
+        var otherright = otherobj.x + otherobj.width;
+        var othertop = otherobj.y;
+        var otherbottom = otherobj.y + otherobj.height;
+        var crash = true;
+
+        if (
+            mybottom < othertop ||
+            mytop > otherbottom ||
+            myright < otherleft ||
+            myleft > otherright
+        ) {
+            crash = false;
+        }
+        return crash;
+    };
+}
+
+function isCollision(component1, component2) {
+    var left1 = component1.x;
+    var right1 = component1.x + component1.width;
+    var top1 = component1.y;
+    var bottom1 = component1.y + component1.height;
+    var left2 = component2.x;
+    var right2 = component2.x + component2.width;
+    var top2 = component2.y;
+    var bottom2 = component2.y + component2.height;
+
+    return (
+        bottom1 >= top2 &&
+        top1 <= bottom2 &&
+        right1 >= left2 &&
+        left1 <= right2
+    );
+}
+
+function randomColorComponent() {
+    this.width = 30;
+    this.height = 30;
+    this.x = Math.floor(Math.random() * (myGameArea.canvas.width - this.width));
+    this.y = -this.height;
+    this.speedY = 1; // Kecepatan pergerakan ke bawah
+    this.colors = ['#ff0000', '#00ff00', '#0000ff']; // Warna yang tersedia
+    this.currentColor = this.colors[Math.floor(Math.random() * this.colors.length)]; // Warna saat ini
+
+    this.update = function() {
+        if (!isGameOver) { // Menambahkan pengecekan status permainan
+            ctx = myGameArea.context;
+            ctx.fillStyle = this.currentColor;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+            this.y += this.speedY; // Pergerakan ke bawah
+            if (this.y > myGameArea.canvas.height) {
+                this.y = -this.height; // Reset posisi jika keluar dari layar
+                this.x = Math.floor(Math.random() * (myGameArea.canvas.width - this.width));
+                this.currentColor = this.colors[Math.floor(Math.random() * this.colors.length)]; // Ganti warna secara acak
+            }
+        }
+    }
+}
+
+
+function updateScore() {
+    document.getElementById("score").innerHTML = "Score: " + score;
+}
+
+
+function updateGameArea() {
+    updateTimer();
+    myGameArea.clear();
+    myGamePiece.newPos();
+    myGamePiece.update();
+    randomComponent.update();
+    if (!isGameOver) {
+        myGameArea.clear();
+        myGamePiece.newPos();
+        myGamePiece.update();
+        randomComponent.update();
+
+        // Deteksi tabrakan
+        if (isCollision(myGamePiece, randomComponent)) {
+            isGameOver = true; // Set status game over
+            clearInterval(myGameArea.interval); // Hentikan permainan
+            alert("Game Over! Score: " + score); // Tampilkan pesan game over dengan skor
+        }
+
+        updateScore(); // Panggil fungsi updateScore() untuk mengupdate skor
+    } else {
+        // Menampilkan pesan "Game Over!" setelah permainan berakhir
+        alert("Game Over! Score: " + score);
+    }
+}
+
+function moveup() {
+    myGamePiece.speedY = -1; 
+    setTimeout(function() {
+        myGamePiece.speedY = 0;
+    }, 100);
+}
+
+function movedown() {
+    myGamePiece.speedY = 1; 
+    setTimeout(function() {
+        myGamePiece.speedY = 0;
+    }, 100);
+}
+
+function moveleft() {
+    myGamePiece.speedX = -1; 
+    setTimeout(function() {
+        myGamePiece.speedX = 0;
+    }, 100);
+}
+
+function moveright() {
+    myGamePiece.speedX = 1; 
+    setTimeout(function() {
+        myGamePiece.speedX = 0;
+    }, 100);
+}
+
+function drawVerticalRoad() {
+    var road = document.createElement('div');
+    road.classList.add('vertical-road');
+    document.body.appendChild(road);
+}
+</script>
+<div style="text-align:center;width:480px;">
+  <button onclick="moveup()">UP</button><br><br>
+  <button onclick="moveleft()">LEFT</button>
+  <button onclick="moveright()">RIGHT</button><br><br>
+  <button onclick="movedown()">DOWN</button>
+</div>
+
+<p>If you click a button the red square will start moving. Click the same button many times, and it will move faster and faster.</p>
+</body>
+</html>
